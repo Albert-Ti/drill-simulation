@@ -14,6 +14,7 @@ export const Scene: React.FC<SceneProps> = ({onDepthUpdate}) => {
       <OrbitControls zoomSpeed={5} />
       <DrillSimulation onDepthUpdate={onDepthUpdate} />
       <AlternativePath path={alternativeTrajectory} />
+      {/* <Stats /> */}
     </Canvas>
   )
 }

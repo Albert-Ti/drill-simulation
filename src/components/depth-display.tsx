@@ -22,12 +22,13 @@ export const DepthDisplay: React.FC<DepthDisplayProps> = ({depth}) => {
         top: 20,
         left: 20,
         padding: '10px 20px',
-        background: 'rgba(0,0,0,0.6)',
+        background: 'rgba(0,0,0,0.8)',
         color: '#0f0',
         fontSize: 16,
         borderRadius: 8,
         fontFamily: 'monospace',
         lineHeight: 1.6,
+        zIndex: 1,
       }}
     >
       <div>Глубина: {depth.toFixed(2)} м</div>
