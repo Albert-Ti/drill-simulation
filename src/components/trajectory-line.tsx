@@ -13,7 +13,7 @@ export const TrajectoryLine: React.FC<Props> = ({points, fullTrajectory}) => {
   }
 
   const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)))
-  const geometry = new THREE.TubeGeometry(curve, 100, 0.02, 8, false)
+  const geometry = new THREE.TubeGeometry(curve, 100, 0.1, 16, false)
 
   return (
     <mesh geometry={geometry}>

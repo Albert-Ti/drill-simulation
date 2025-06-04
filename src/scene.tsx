@@ -11,7 +11,7 @@ interface SceneProps {
 export const Scene: React.FC<SceneProps> = ({onDepthUpdate}) => {
   return (
     <Canvas camera={{position: [10, 10, 10], fov: 50}}>
-      <OrbitControls />
+      <OrbitControls zoomSpeed={5} />
       <DrillSimulation onDepthUpdate={onDepthUpdate} />
       <AlternativePath path={alternativeTrajectory} />
     </Canvas>
