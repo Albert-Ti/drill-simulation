@@ -1,15 +1,27 @@
-import {Line, OrbitControls, Preload, useGLTF} from '@react-three/drei'
-import {Canvas, useFrame, type Vector3} from '@react-three/fiber'
+import {Line, OrbitControls, Preload, useGLTF, Text} from '@react-three/drei'
+import {Canvas, useFrame} from '@react-three/fiber'
 import {useRef, useState, type FC} from 'react'
 import * as THREE from 'three'
 import {limitTrajectoryByMaxAngle} from './helpers'
 
+// 1 point = 10m в представлении
+
+const layers = [
+  {depth: 20, color: '#d2b48c', name: 'Песок'},
+  {depth: 25, color: '#deb887', name: 'Глина'},
+  {depth: 5, color: '#a0522d', name: 'Сланец'},
+  {depth: 5, color: '#8b4513', name: 'Гранит'},
+  {depth: 10, color: '#3e2723', name: 'Нефтеносный слой'},
+]
+const earthDepth = layers.reduce((acc, l) => acc + l.depth, 0)
+const oilDepth = -50
+
 const rawPoints = [
   new THREE.Vector3(0, 10.7, 0), // старт
   new THREE.Vector3(0, 0, 0), // у поверхности
-  new THREE.Vector3(-5, -15, 0), // уходит вбок
-  new THREE.Vector3(-10, -30, -10), // глубже и дальше в сторону
-  new THREE.Vector3(5, -45, -5), // цель — сбоку от нефти
+  new THREE.Vector3(-2, -15, -2), // уходит вбок
+  new THREE.Vector3(-6, -30, -6), // глубже и дальше в сторону
+  new THREE.Vector3(8, oilDepth, -5), // цель — сбоку от нефти
 ]
 
 const drillPoints = limitTrajectoryByMaxAngle(rawPoints, 15)
@@ -53,8 +65,7 @@ const DrillingRig: FC = () => {
 
 const EarthCutSection = () => {
   return (
-    <mesh position={[0, -20, 0]} receiveShadow>
-      <boxGeometry args={[30, 60, 30]} />
+    <mesh position={[0, -earthDepth, 0]} receiveShadow>
       <meshStandardMaterial color={'#FBCEB1'} side={THREE.BackSide} />
     </mesh>
   )
@@ -69,44 +80,72 @@ const GroundSurface = () => {
   )
 }
 
-const DrillPath = () => {
-  return <Line points={curve.getPoints(50)} color='white' lineWidth={1} />
+const EarthLayers = () => {
+  let currentY = 10
+
+  return (
+    <group position={[0, 0, 0]}>
+      {layers.map((layer, index) => {
+        const height = layer.depth
+        const y = currentY - height / 2
+        currentY -= height
+
+        return (
+          <mesh key={index} position={[0, y, 0]}>
+            <boxGeometry args={[30, height, 30]} />
+            <meshStandardMaterial color={layer.color} opacity={0.6} transparent />
+          </mesh>
+        )
+      })}
+    </group>
+  )
 }
 
-const SolidDrillBody: FC<{trail: THREE.Vector3[]}> = ({trail}) => {
-  if (trail.length < 2) return null
-
-  const segments = []
-
-  for (let i = 1; i < trail.length; i++) {
-    const start = trail[i - 1]
-    const end = trail[i]
-    const midPoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5)
-    const direction = new THREE.Vector3().subVectors(end, start)
-    const length = direction.length()
-    const axis = new THREE.Vector3(0, 1, 0)
-    const quaternion = new THREE.Quaternion().setFromUnitVectors(
-      axis,
-      direction.clone().normalize()
-    )
-
-    segments.push(
-      <mesh key={i} position={midPoint} quaternion={quaternion}>
-        <cylinderGeometry args={[0.08, 0.08, length, 16]} />
-        <meshPhysicalMaterial
-          color={'#ffffff'}
-          metalness={1}
-          roughness={0.05} // почти гладкий, больше блеска
-          clearcoat={1}
-          clearcoatRoughness={0.05}
-          emissive={'#464451'}
-          emissiveIntensity={0.3}
-        />
-      </mesh>
+const DepthRuler = () => {
+  const marks = []
+  for (let i = 0; i <= earthDepth; i += 5) {
+    marks.push(
+      <group key={i} position={[-15, 10 - i, 15]}>
+        <mesh>
+          <boxGeometry args={[0.3, 0.02, 0.5]} />
+          <meshBasicMaterial color='black' />
+        </mesh>
+        <mesh position={[-2, 0.1, 0.1]}>
+          <Text fontSize={0.5} color='black' anchorX='left' anchorY='middle'>
+            {`${i}0м`}
+          </Text>
+          <meshBasicMaterial color='black' />
+        </mesh>
+      </group>
     )
   }
 
-  return <>{segments}</>
+  return <group>{marks}</group>
+}
+
+const DrillPath = () => {
+  return <Line points={curve.getPoints(100)} color='white' lineWidth={1} />
+}
+
+const DrillBody: FC<{trail: THREE.Vector3[]}> = ({trail}) => {
+  if (trail.length < 2) return null
+
+  const curve = new THREE.CatmullRomCurve3(trail)
+  const geometry = new THREE.TubeGeometry(curve, 100, 0.08, 16, false)
+
+  return (
+    <mesh geometry={geometry}>
+      <meshPhysicalMaterial
+        color={'#ffffff'}
+        metalness={1}
+        roughness={0.05} // почти гладкий, больше блеска
+        clearcoat={1}
+        clearcoatRoughness={0.05}
+        emissive={'#464451'}
+        emissiveIntensity={0.3}
+      />
+    </mesh>
+  )
 }
 
 const DrillHead = ({onTrailUpdate}: {onTrailUpdate?: (trail: THREE.Vector3[]) => void}) => {
@@ -129,6 +168,8 @@ const DrillHead = ({onTrailUpdate}: {onTrailUpdate?: (trail: THREE.Vector3[]) =>
           new THREE.Vector3(0, 1, 0),
           tangent.normalize()
         )
+
+        groupRef.current.rotation.z += delta * 0.5
       }
 
       // Обновляем trail (добавляем точку, если далеко от последней)
@@ -169,12 +210,14 @@ export default function App() {
       <ambientLight intensity={0.5} />
       <pointLight position={[10, 10, 10]} intensity={0.8} castShadow />
       <DrillingRig />
-      <EarthCutSection />
       <GroundSurface />
+      <EarthCutSection />
+      <EarthLayers />
+      <DepthRuler />
       <DrillPath />
       <DrillHead onTrailUpdate={setTrail} />
-      <SolidDrillBody trail={trail} />
-      <OilDeposit position={[5, -45, -5]} />
+      <DrillBody trail={trail} />
+      <OilDeposit position={[8, oilDepth, -5]} />
       <OrbitControls />
       <Preload all />
     </Canvas>
