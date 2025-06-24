@@ -10,6 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@consta/charts": "^1.0.0",
+    "@consta/icons": "^1.1.1",
+    "@consta/uikit": "^5.22.0",
     "@react-three/drei": "^10.1.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
