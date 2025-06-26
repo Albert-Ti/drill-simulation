@@ -19,7 +19,7 @@ const oilDepth = -50
 const rawPoints = [
   new THREE.Vector3(0, 10.7, 0), // старт
   new THREE.Vector3(0, 0, 0), // у поверхности
-  new THREE.Vector3(-3, -15, -2), // уходит вбок
+  new THREE.Vector3(-2, -15, -2), // уходит вбок
   new THREE.Vector3(-6, -30, -6), // глубже и дальше в сторону
   new THREE.Vector3(8, oilDepth, -5), // цель — сбоку от нефти
 ]
@@ -87,13 +87,7 @@ const GroundSurface = () => {
   )
 }
 
-const EarthLayers = ({
-  transparent = false,
-  clip = [],
-}: {
-  transparent?: boolean
-  clip?: THREE.Plane[]
-}) => {
+const EarthLayers = ({transparent = false}: {transparent?: boolean}) => {
   let currentY = 10
 
   return (
@@ -112,8 +106,6 @@ const EarthLayers = ({
               transparent={transparent}
               depthWrite={!transparent}
               side={THREE.DoubleSide}
-              clippingPlanes={clip}
-              clipShadows={true}
             />
           </mesh>
         )
@@ -278,7 +270,6 @@ export default function App() {
   const [trail, setTrail] = useState<THREE.Vector3[]>([])
   const [layersTransparent, setLayersTransparent] = useState(false)
   const [casingTransparent, setCasingTransparent] = useState(false)
-  const [clippingEnabled, setClippingEnabled] = useState(false)
 
   return (
     <>
@@ -294,19 +285,6 @@ export default function App() {
         }}
       >
         <h1 style={{margin: 0}}>3D Модель бурения</h1>
-        <button
-          onClick={() => setClippingEnabled(!clippingEnabled)}
-          style={{
-            padding: '8px 16px',
-            background: clippingEnabled ? '#4CAF50' : '#f44336',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-          }}
-        >
-          {clippingEnabled ? 'Выключить разрез' : 'Показать разрез'}
-        </button>
         <button
           onClick={() => setLayersTransparent(!layersTransparent)}
           style={{
@@ -344,7 +322,7 @@ export default function App() {
         <DrillingRig />
         <GroundSurface />
         <EarthCutSection />
-        <EarthLayers transparent={layersTransparent} clip={clippingEnabled ? clippingPlanes : []} />
+        <EarthLayers transparent={layersTransparent} />
         <DepthRuler />
         {casingSteps.map((step, i) => (
           <CasingStepTube
